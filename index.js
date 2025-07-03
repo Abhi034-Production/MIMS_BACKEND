@@ -10,7 +10,7 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-const allowedOrigins = [ "https://mimsp.netlify.app/"];
+const allowedOrigins = [ "https://mimsp.netlify.app"];
 
 app.use(
   cors({
