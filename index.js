@@ -10,7 +10,7 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-const allowedOrigins = [ "http://localhost:5173"];
+const allowedOrigins = [ "https://mims-backend-x0i3.onrender.com"];
 
 app.use(
   cors({
@@ -25,6 +25,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE"],
   })
 );
+
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
