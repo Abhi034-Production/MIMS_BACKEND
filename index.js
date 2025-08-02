@@ -10,7 +10,7 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-const allowedOrigins = [ "https://mimsp.netlify.app","http://localhost:5173/"];
+const allowedOrigins = [ "https://mimsp.netlify.app","http://localhost:5173"];
 
 app.use(
   cors({
