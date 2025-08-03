@@ -5,7 +5,56 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt"); 
 const SignupModel = require("./models/adminsignup");
 const ProductModel = require("./models/product");
+
 const nodemailer = require("nodemailer");
+const BusinessProfile = require("./models/businessprofile");
+// Create or update business profile
+app.post("/business-profile", async (req, res) => {
+  try {
+    const {
+      userEmail,
+      businessName,
+      businessMobile,
+      businessAddress,
+      businessEmail,
+      businessLogo,
+      businessStamp,
+      businessCategory,
+    } = req.body;
+
+    // Upsert: update if exists, else create
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { userEmail },
+      {
+        businessName,
+        businessMobile,
+        businessAddress,
+        businessEmail,
+        businessLogo,
+        businessStamp,
+        businessCategory,
+      },
+      { new: true, upsert: true }
+    );
+    res.json({ status: "success", profile });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
+
+// Get business profile by user email
+app.get("/business-profile/:userEmail", async (req, res) => {
+  try {
+    const { userEmail } = req.params;
+    const profile = await BusinessProfile.findOne({ userEmail });
+    if (!profile) {
+      return res.status(404).json({ status: "not_found" });
+    }
+    res.json({ status: "success", profile });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
 
 
 const app = express();
