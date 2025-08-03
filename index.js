@@ -61,7 +61,7 @@ app.get("/business-profile/:userEmail", async (req, res) => {
 
 const app = express();
 
-const allowedOrigins = [ "https://mimsp.netlify.app"];
+const allowedOrigins = [ "https://mimsp.netlify.app" , "http://localhost:5173"];
 
 app.use(
   cors({
