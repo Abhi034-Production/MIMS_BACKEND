@@ -2,13 +2,44 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bcrypt = require("bcrypt"); 
+const bcrypt = require("bcrypt");
 const SignupModel = require("./models/adminsignup");
 const ProductModel = require("./models/product");
 const nodemailer = require("nodemailer");
 const BusinessProfile = require("./models/businessprofile");
 
 const app = express();
+
+const allowedOrigins = ["https://mimsp.netlify.app" , "http://localhost:5173"];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  })
+);
+
+
+app.use(express.json());
+
+let otpStore = {};
+
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log("MongoDB Connection Error:", err));
+
+
+app.get("/run", (req, res) => {
+  res.send("Backend is running!");
+});
 
 
 app.post("/business-profile", async (req, res) => {
@@ -59,43 +90,6 @@ app.get("/business-profile/:userEmail", async (req, res) => {
 });
 
 
-const app = express();
-
-const allowedOrigins = [ "https://mimsp.netlify.app" , "http://localhost:5173"];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  })
-);
-
-
-
-
-app.use(express.json());
-
-let otpStore = {};
-
-
-
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log("MongoDB Connection Error:", err));
-
-
-app.get("/run", (req, res) => {
-  res.send("Backend is running!");
-});
-
-
 
 // Transporter
 const transporter = nodemailer.createTransport({
@@ -106,15 +100,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Password + OTP Step 1: Validate credentials and send OTP
-
 // Non-OTP Login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await SignupModel.findOne({ email });
 
   if (user) {
-    if (await bcrypt.compare(password, user.password)) { 
+    if (await bcrypt.compare(password, user.password)) {
       res.send("success");
     } else {
       res.send("incorrect password");
@@ -128,13 +120,14 @@ app.post("/login", async (req, res) => {
 app.post("/get-user", async (req, res) => {
   const { email } = req.body;
   const user = await SignupModel.findOne({ email });
-  
+
   if (user) {
     res.json({ status: "success", name: user.name });
   } else {
     res.status(404).json({ status: "error", message: "User not found" });
   }
 });
+
 // Update Admin Info
 app.put("/update-admin", async (req, res) => {
   const { email, name, password } = req.body;
@@ -142,7 +135,7 @@ app.put("/update-admin", async (req, res) => {
   try {
     const update = { name };
     if (password) {
-      update.password = await bcrypt.hash(password, 10); 
+      update.password = await bcrypt.hash(password, 10);
     }
 
     await SignupModel.findOneAndUpdate({ email }, update);
@@ -157,7 +150,7 @@ app.post("/login", async (req, res) => {
   const user = await SignupModel.findOne({ email });
 
   if (user) {
-    if (await bcrypt.compare(password, user.password)) { // Compare hashed password
+    if (await bcrypt.compare(password, user.password)) {
       res.json("success");
     } else {
       res.json("incorrect password");
@@ -170,7 +163,7 @@ app.post("/login", async (req, res) => {
 app.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10); // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await SignupModel.create({ name, email, password: hashedPassword });
     res.json(newUser);
   } catch (err) {
@@ -321,7 +314,7 @@ app.listen(PORT, () => {
 // const express = require("express");
 // const mongoose = require("mongoose");
 //  const cors = require("cors");
-// const bcrypt = require("bcrypt"); 
+// const bcrypt = require("bcrypt");
 // const SignupModel = require("./models/adminsignup");
 // const ProductModel = require("./models/product");
 // const nodemailer = require("nodemailer");
@@ -379,7 +372,7 @@ app.listen(PORT, () => {
 //   const { email, password } = req.body;
 //   const user = await SignupModel.findOne({ email });
 
-//   if (!user || !await bcrypt.compare(password, user.password)) { 
+//   if (!user || !await bcrypt.compare(password, user.password)) {
 //     return res.json({ status: "invalid" });
 //   }
 
@@ -440,7 +433,7 @@ app.listen(PORT, () => {
 //   try {
 //     const update = { name };
 //     if (password) {
-//       update.password = await bcrypt.hash(password, 10); 
+//       update.password = await bcrypt.hash(password, 10);
 //     }
 
 //     await SignupModel.findOneAndUpdate({ email }, update);
