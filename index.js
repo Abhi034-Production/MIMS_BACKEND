@@ -1,14 +1,16 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
- const cors = require("cors");
+const cors = require("cors");
 const bcrypt = require("bcrypt"); 
 const SignupModel = require("./models/adminsignup");
 const ProductModel = require("./models/product");
-
 const nodemailer = require("nodemailer");
 const BusinessProfile = require("./models/businessprofile");
-// Create or update business profile
+
+const app = express();
+
+
 app.post("/business-profile", async (req, res) => {
   try {
     const {
