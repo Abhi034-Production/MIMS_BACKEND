@@ -5,8 +5,30 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const SignupModel = require("./models/adminsignup");
 const ProductModel = require("./models/product");
+
 const nodemailer = require("nodemailer");
 const BusinessProfile = require("./models/businessprofile");
+const multer = require("multer");
+const path = require("path");
+
+// Multer config for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, "uploads"));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
+// Ensure uploads directory exists
+const fs = require("fs");
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 const app = express();
 
@@ -28,6 +50,7 @@ app.use(
 
 
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 let otpStore = {};
 
@@ -42,7 +65,10 @@ app.get("/run", (req, res) => {
 });
 
 
-app.post("/business-profile", async (req, res) => {
+app.post("/business-profile", upload.fields([
+  { name: "businessLogo", maxCount: 1 },
+  { name: "businessStamp", maxCount: 1 }
+]), async (req, res) => {
   try {
     const {
       userEmail,
@@ -50,27 +76,39 @@ app.post("/business-profile", async (req, res) => {
       businessMobile,
       businessAddress,
       businessEmail,
-      businessLogo,
-      businessStamp,
       businessCategory,
     } = req.body;
 
+    // File paths
+    let businessLogo = null;
+    let businessStamp = null;
+    if (req.files["businessLogo"]) {
+      businessLogo = `/uploads/${req.files["businessLogo"][0].filename}`;
+    }
+    if (req.files["businessStamp"]) {
+      businessStamp = `/uploads/${req.files["businessStamp"][0].filename}`;
+    }
+
     // Upsert: update if exists, else create
+    const update = {
+      businessName,
+      businessMobile,
+      businessAddress,
+      businessEmail,
+      businessCategory,
+    };
+    if (businessLogo) update.businessLogo = businessLogo;
+    if (businessStamp) update.businessStamp = businessStamp;
+
     const profile = await BusinessProfile.findOneAndUpdate(
       { userEmail },
-      {
-        businessName,
-        businessMobile,
-        businessAddress,
-        businessEmail,
-        businessLogo,
-        businessStamp,
-        businessCategory,
-      },
+      update,
       { new: true, upsert: true }
     );
+    console.log("[ALERT] Business profile created/updated for:", userEmail);
     res.json({ status: "success", profile });
   } catch (error) {
+    console.error("[ALERT] Error in /business-profile:", error.message);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
@@ -81,17 +119,18 @@ app.get("/business-profile/:userEmail", async (req, res) => {
     const { userEmail } = req.params;
     const profile = await BusinessProfile.findOne({ userEmail });
     if (!profile) {
+      console.log(`[ALERT] Business profile not found for: ${userEmail}`);
       return res.status(404).json({ status: "not_found" });
     }
+    console.log(`[ALERT] Business profile fetched for: ${userEmail}`);
     res.json({ status: "success", profile });
   } catch (error) {
+    console.error("[ALERT] Error in GET /business-profile/:userEmail:", error.message);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
 
 
-
-// Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
