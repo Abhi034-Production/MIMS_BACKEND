@@ -15,9 +15,11 @@ const billSchema = new mongoose.Schema({
         price: Number,
         quantity: Number,
         totalPrice: Number,
+        email: String, // business email for each product (for filtering)
       },
     ],
     total: Number, // Grand total of the bill
+    businessEmail: String, // business email for the bill
   });
   
   // Create Model
