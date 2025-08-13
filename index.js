@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -5,6 +6,9 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const SignupModel = require("./models/adminsignup");
 const ProductModel = require("./models/product");
+const IntradayEntry = require("./models/intradayentrymodel");
+
+
 
 const nodemailer = require("nodemailer");
 const BusinessProfile = require("./models/businessprofile");
@@ -32,6 +36,8 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
+let otpStore = {};
+
 const allowedOrigins = ["https://mimsp.netlify.app" , "http://localhost:5173"];
 
 app.use(
@@ -52,7 +58,6 @@ app.use(
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-let otpStore = {};
 
 
 mongoose.connect(process.env.MONGO_URI)
@@ -62,6 +67,49 @@ mongoose.connect(process.env.MONGO_URI)
 
 app.get("/run", (req, res) => {
   res.send("Backend is running!");
+});
+
+// Get Intraday Entries by business email
+app.get("/intraday-entries", async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    if (!userEmail) return res.status(400).json({ error: "userEmail is required" });
+    const entries = await IntradayEntry.find({ userEmail });
+    res.json(entries);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete Intraday Entry by ID
+app.delete("/intraday-entry/:id", async (req, res) => {
+  try {
+    await IntradayEntry.findByIdAndDelete(req.params.id);
+    res.json({ message: "Entry deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Edit Intraday Entry by ID
+app.put("/intraday-entry/:id", async (req, res) => {
+  try {
+    const updated = await IntradayEntry.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Save Intraday Entry
+app.post("/intraday-new-entry", async (req, res) => {
+  try {
+    const entry = new IntradayEntry(req.body);
+    await entry.save();
+    res.status(201).json({ message: "Intraday entry saved successfully!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 
